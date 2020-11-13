@@ -13,12 +13,15 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
-	testImplementation('org.springframework.boot:spring-boot-starter-test') {
-		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
-	}
+	implementation 'com.graphql-java:graphql-java:11.0'
+	implementation 'com.graphql-java:graphql-java-spring-boot-starter-webmvc:1.0'
+	implementation 'org.elasticsearch.client:elasticsearch-rest-high-level-client:7.9.3'
+	implementation 'org.elasticsearch:elasticsearch:7.9.3'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-test {
-	useJUnitPlatform()
-}
+// TODO: enable tests
+//test {
+//	useJUnitPlatform()
+//}
