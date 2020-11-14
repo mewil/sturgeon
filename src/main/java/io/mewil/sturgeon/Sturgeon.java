@@ -1,4 +1,4 @@
-package io.mewil.elasticgraphql;
+package io.mewil.sturgeon;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,10 +7,10 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @SpringBootApplication
-public class ElasticGraphQLApplication {
+public class Sturgeon {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ElasticGraphQLApplication.class, args);
+		SpringApplication.run(Sturgeon.class, args);
 	}
 
 	// TODO: Remove CORS allow rule

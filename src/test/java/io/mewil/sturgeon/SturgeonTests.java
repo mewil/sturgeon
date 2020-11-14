@@ -1,10 +1,10 @@
-package io.mewil.elasticgraphql;
+package io.mewil.sturgeon;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ElasticGraphQLApplicationTests {
+class SturgeonTests {
 
 	@Test
 	void contextLoads() {
