@@ -1,4 +1,4 @@
-package io.mewil.elasticgraphql;
+package io.mewil.sturgeon;
 
 import graphql.language.StringValue;
 import graphql.schema.Coercing;

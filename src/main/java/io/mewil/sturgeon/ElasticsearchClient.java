@@ -1,4 +1,4 @@
-package io.mewil.elasticgraphql;
+package io.mewil.sturgeon;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.get.GetRequest;
