@@ -1,10 +1,15 @@
 package io.mewil.sturgeon;
 
 import graphql.Scalars;
+import graphql.scalars.ExtendedScalars;
 import graphql.schema.*;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.collect.Tuple;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.metrics.ParsedAvg;
@@ -19,6 +24,7 @@ import java.util.stream.Stream;
 public class GraphQLSchemaBuilder {
 
     private static final String TYPE = "type";
+    private static final String BOOLEAN_QUERY = "boolean_query";
     private static final String ID = "id";
     private static final String SIZE = "size";
     public static GraphQLScalarType UUID = new UUIDScalar();
@@ -57,6 +63,11 @@ public class GraphQLSchemaBuilder {
                 .name(String.format("doc_%s", mapping.getKey()))
                 .fields(buildFieldDefinitionsFromIndexMapping(mapping.getKey(), mapping.getValue()))
                 .build();
+        final GraphQLArgument queryArguments = GraphQLArgument.newArgument()
+                .name(BOOLEAN_QUERY)
+                .type(buildBooleanQueryArguments(mapping.getKey(), mapping.getValue()))
+                .build();
+
         final GraphQLObjectType aggregateDoc = new GraphQLObjectType.Builder()
                 .name(String.format("agg_%s", mapping.getKey()))
                 .fields(buildAggregateFieldDefinitionsFromIndexMapping(mapping.getKey(), mapping.getValue()))
@@ -70,6 +81,7 @@ public class GraphQLSchemaBuilder {
                                 .name(SIZE)
                                 .type(GraphQLNonNull.nonNull(Scalars.GraphQLInt))
                                 .build())
+                        .argument(queryArguments)
                         .build(),
                 new GraphQLFieldDefinition.Builder()
                         .name(String.format("%s_by_id", normalizeGraphQLName(mapping.getKey())))
@@ -88,15 +100,91 @@ public class GraphQLSchemaBuilder {
                 );
     }
 
-    private List<GraphQLFieldDefinition> buildAggregateFieldDefinitionsFromIndexMapping(String index, Map<String, Object> mapping) {
+    private GraphQLInputType buildBooleanQueryArguments(String index, Map<String, Object> mapping) {
+        return GraphQLInputObjectType.newInputObject()
+                .fields(Arrays.stream(BooleanQueryType.values())
+                        .map(booleanQueryType -> GraphQLInputObjectField.newInputObjectField()
+                                .type(GraphQLInputObjectType.newInputObject()
+                                        .fields(mapping.entrySet().stream()
+                                                     .flatMap(entry -> {
+                                                        // TODO: Refactor unchecked cast
+                                                        final Map<String, Object> properties = (HashMap<String, Object>) entry.getValue();
+                                                        return properties.entrySet().stream();
+                                                    })
+                                                    .map(e -> buildBooleanQueryArgument(index, e, booleanQueryType))
+                                                    .filter(Optional::isPresent)
+                                                    .map(Optional::get)
+                                                    // .sorted() TODO: implement comparator
+                                                    .collect(Collectors.toList())
+                                        )
+                                        .name(String.format("boolean_query_%s_%s", booleanQueryType.getName(), index))
+                                )
+                                .name(booleanQueryType.getName())
+                                .build())
+                        .collect(Collectors.toList())
+                )
+                .name(String.format("boolean_query_%s", index))
+                .build();
+    }
+
+    private GraphQLInputObjectType getComparisonArguments(final String name, final GraphQLScalarType type) {
+        final List<GraphQLInputObjectField> fields = new ArrayList<>();
+        if (Scalars.GraphQLFloat.equals(type) || ExtendedScalars.DateTime.equals(type)) {
+            fields.addAll(List.of(
+                    GraphQLInputObjectField.newInputObjectField()
+                            .name("gt")
+                            .type(Scalars.GraphQLFloat)
+                            .build(),
+                    GraphQLInputObjectField.newInputObjectField()
+                            .name("gte")
+                            .type(Scalars.GraphQLFloat)
+                            .build(),
+                    GraphQLInputObjectField.newInputObjectField()
+                            .name("lt")
+                            .type(Scalars.GraphQLFloat)
+                            .build(),
+                    GraphQLInputObjectField.newInputObjectField()
+                            .name("lte")
+                            .type(Scalars.GraphQLFloat)
+                            .build()
+            ));
+        }
+        return GraphQLInputObjectType.newInputObject()
+                .fields(fields)
+                .name(String.format("boolean_query_%s", normalizeGraphQLName(name)))
+                .build();
+    }
+
+    private Optional<GraphQLInputObjectField> buildBooleanQueryArgument(final String index,
+                                                                        final Map.Entry<String, Object> field,
+                                                                        final BooleanQueryType booleanQueryType) {
+        // TODO: Refactor unchecked cast
+        // TODO: Add support for nested types. Type will be null if we have a nested type, ignore for now.
+        final Object type = ((HashMap<String, Object>) field.getValue()).get(TYPE);
+        if (type == null) {
+            return Optional.empty();
+        }
+        final GraphQLScalarType scalarType = getGraphQLType(type.toString());
+        if (Scalars.GraphQLFloat.equals(scalarType) || ExtendedScalars.DateTime.equals(scalarType)) {
+            return Optional.of(GraphQLInputObjectField
+                    .newInputObjectField()
+                    .type(getComparisonArguments(index+booleanQueryType.getName()+normalizeGraphQLName(field.getKey()), scalarType))
+                    .name(normalizeGraphQLName(field.getKey()))
+                    .build());
+        }
+        return Optional.empty();
+    }
+
+    private List<GraphQLFieldDefinition> buildAggregateFieldDefinitionsFromIndexMapping(
+            final String index, final Map<String, Object> mapping) {
         return Arrays.stream(AggregationType.values())
-                .map(agg -> buildAverageAggregateFieldDefinitionsFromIndexMapping(index, mapping, agg))
+                .map(agg -> buildFieldDefinitionsForAggregateType(index, mapping, agg))
                 .collect(Collectors.toList());
     }
 
-    private GraphQLFieldDefinition buildAverageAggregateFieldDefinitionsFromIndexMapping(final String index,
-                                                                                         final Map<String, Object> mapping,
-                                                                                         final AggregationType aggregationType) {
+    private GraphQLFieldDefinition buildFieldDefinitionsForAggregateType(final String index,
+                                                                         final Map<String, Object> mapping,
+                                                                         final AggregationType aggregationType) {
         final GraphQLObjectType doc = new GraphQLObjectType.Builder()
                 .name(String.format("%s_%s", aggregationType.getName(), index))
                 .fields(mapping.entrySet().stream()
@@ -115,12 +203,12 @@ public class GraphQLSchemaBuilder {
         return new GraphQLFieldDefinition.Builder()
                 .name(aggregationType.getName())
                 .type(doc)
-                .dataFetcher(getDataFetcherForIndexAverageAggregation(index, aggregationType))
+                .dataFetcher(getDataFetcherForIndexAggregation(index, aggregationType))
                 .build();
     }
 
-    public DataFetcher<Map<String, Object>> getDataFetcherForIndexAverageAggregation(final String index,
-                                                                                     final AggregationType aggregationType) {
+    public DataFetcher<Map<String, Object>> getDataFetcherForIndexAggregation(final String index,
+                                                                              final AggregationType aggregationType) {
         return dataFetchingEnvironment -> {
             final Tuple<List<String>, Boolean> queryData = getSelectFieldsFromQuery(dataFetchingEnvironment);
             final SearchResponse response = elasticsearchClient.queryWithAggregation(index, queryData.v1(), aggregationType);
@@ -188,12 +276,51 @@ public class GraphQLSchemaBuilder {
         return dataFetchingEnvironment -> {
             final Tuple<List<String>, Boolean> queryData = getSelectFieldsFromQuery(dataFetchingEnvironment);
             final int size = dataFetchingEnvironment.getArgument(SIZE);
-            final SearchHits hits = elasticsearchClient.query(index, size, queryData.v1()).getHits();
+            final SearchHits hits = elasticsearchClient.query(index, size, queryData.v1(), buildQueryFromArguments(dataFetchingEnvironment)).getHits();
 
             return Arrays.stream(hits.getHits())
                     .map(hit -> decodeElasticsearchDoc(queryData.v2(), hit.getSourceAsMap(), hit.getId()))
                     .collect(Collectors.toList());
         };
+    }
+
+    public List<QueryBuilder> buildQueryFromArguments(final DataFetchingEnvironment dataFetchingEnvironment) {
+        final List<QueryBuilder> queryBuilders = new ArrayList<>();
+        dataFetchingEnvironment.getArguments().forEach((key, value) -> {
+            switch (key) {
+                case BOOLEAN_QUERY:
+                    // TODO: Refactor unchecked cast
+                    queryBuilders.add(buildBooleanQuery((Map<String, Object>) value));
+                    break;
+            }
+        });
+        return queryBuilders;
+    }
+
+    private BoolQueryBuilder buildBooleanQuery(final Map<String, Object> booleanOccurrenceTypes) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        booleanOccurrenceTypes.forEach((key, value) -> {
+            // TODO: Refactor unchecked cast
+            Map<String, Object> map = ((Map<String, Object>) value);
+            switch (BooleanQueryType.valueOf(key.toUpperCase())) {
+                case FILTER:
+                    map.entrySet().forEach(e -> boolQueryBuilder.filter(buildRangeQuery(e)));
+            }
+        });
+        return boolQueryBuilder;
+    }
+
+    private RangeQueryBuilder buildRangeQuery(final Map.Entry<String, Object> field) {
+        final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(normalizedNameLookupTable.get(field.getKey()));
+        ((Map<String, Object>) field.getValue()).forEach((key, value) -> {
+            switch (key) {
+                case "gt"  -> rangeQueryBuilder.gt(value);
+                case "gte" -> rangeQueryBuilder.gte(value);
+                case "lt" -> rangeQueryBuilder.lt(value);
+                case "lte" -> rangeQueryBuilder.lte(value);
+            }
+        });
+        return rangeQueryBuilder;
     }
 
     public DataFetcher<Map<String, Object>> getDataFetcherForIndexById(final String index) {
@@ -234,7 +361,8 @@ public class GraphQLSchemaBuilder {
         return switch (type) {
             case "float" -> Scalars.GraphQLFloat;
             case "long" -> Scalars.GraphQLLong;
-            case "string", "date" -> Scalars.GraphQLString;
+            case "string" -> Scalars.GraphQLString;
+            case "date" -> ExtendedScalars.DateTime;
             case "boolean" -> Scalars.GraphQLBoolean;
             default -> null;
         };

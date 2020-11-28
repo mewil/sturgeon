@@ -11,6 +11,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetMappingsRequest;
 import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
@@ -44,23 +45,28 @@ public class ElasticsearchClient {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getSourceAsMap()));
     }
 
-    public GetResponse queryById(final String index, final String id, final List<String> selectedFields) throws IOException {
+    public GetResponse queryById(final String index, final String id,
+                                 final List<String> selectedFields) throws IOException {
         GetRequest getRequest = new GetRequest(index, id);
-        FetchSourceContext fetchSourceContext = new FetchSourceContext(true, selectedFields.toArray(String[]::new), Strings.EMPTY_ARRAY);
+        FetchSourceContext fetchSourceContext = new FetchSourceContext(true,
+                selectedFields.toArray(String[]::new), Strings.EMPTY_ARRAY);
         getRequest.fetchSourceContext(fetchSourceContext);
         return client.get(getRequest, RequestOptions.DEFAULT);
     }
 
-    private SearchResponse doQueryFromSearchSourceBuilder(final String index, final SearchSourceBuilder sourceBuilder) throws IOException {
+    private SearchResponse doQueryFromSearchSourceBuilder(final String index,
+                                                          final SearchSourceBuilder sourceBuilder) throws IOException {
         final SearchRequest searchRequest = new SearchRequest(index);
         searchRequest.source(sourceBuilder);
         return client.search(searchRequest, RequestOptions.DEFAULT);
     }
 
-    public SearchResponse query(final String index, final int size, final List<String> selectedFields) throws IOException {
+    public SearchResponse query(final String index, final int size, final List<String> selectedFields,
+                                final List<QueryBuilder> queryBuilders) throws IOException {
         final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
                 .fetchSource(selectedFields.toArray(String[]::new), Strings.EMPTY_ARRAY)
                 .size(size);
+        queryBuilders.forEach(sourceBuilder::query);
         return doQueryFromSearchSourceBuilder(index, sourceBuilder);
     }
 
