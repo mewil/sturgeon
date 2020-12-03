@@ -1,4 +1,4 @@
-package io.mewil.sturgeon;
+package io.mewil.sturgeon.schema.types;
 
 public enum AggregationType {
     AVG,

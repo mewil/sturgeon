@@ -1,5 +1,6 @@
 package io.mewil.sturgeon;
 
+import io.mewil.sturgeon.schema.types.AggregationType;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -22,10 +23,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ElasticsearchClient {
+public final class ElasticsearchClient {
+
+    private static ElasticsearchClient INSTANCE;
+
     private final RestHighLevelClient client;
 
-    public ElasticsearchClient() {
+    public static ElasticsearchClient getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new ElasticsearchClient();
+        }
+        return INSTANCE;
+    }
+
+
+    private ElasticsearchClient() {
         HttpHost[] hosts = Arrays.stream(System.getenv("ELASTICSEARCH_HOSTS").split(","))
                 .map(s -> {
                     String[] parts = s.split(":");

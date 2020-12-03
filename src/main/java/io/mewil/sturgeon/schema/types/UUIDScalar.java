@@ -1,4 +1,4 @@
-package io.mewil.sturgeon;
+package io.mewil.sturgeon.schema.types;
 
 import graphql.language.StringValue;
 import graphql.schema.Coercing;
