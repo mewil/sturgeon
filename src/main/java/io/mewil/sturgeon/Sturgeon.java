@@ -9,19 +9,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @SpringBootApplication
 public class Sturgeon {
 
-	public static void main(String[] args) {
-		SpringApplication.run(Sturgeon.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(Sturgeon.class, args);
+  }
 
-	// TODO: Remove CORS allow rule
-	@Bean
-	public WebMvcConfigurer corsConfigurer() {
-		return new WebMvcConfigurer() {
-			@Override
-			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/graphql").allowedOrigins("http://localhost:3000");
-			}
-		};
-	}
-
+  // TODO: Remove CORS allow rule
+  @Bean
+  public WebMvcConfigurer corsConfigurer() {
+    return new WebMvcConfigurer() {
+      @Override
+      public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/graphql").allowedOrigins("http://localhost:3000");
+      }
+    };
+  }
 }

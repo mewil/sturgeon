@@ -1,6 +1,7 @@
 package io.mewil.sturgeon;
 
 import graphql.GraphQL;
+import io.mewil.sturgeon.schema.GraphQLSchemaBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
@@ -10,22 +11,19 @@ import java.io.IOException;
 @Component
 public class GraphQLProvider {
 
-    private GraphQLSchemaBuilder graphQLSchemaBuilder;
+  private GraphQL graphQL;
 
-    private GraphQL graphQL;
+  @PostConstruct
+  public void init() throws IOException {
+    updateGraphQLSchema();
+  }
 
-    @PostConstruct
-    public void init() throws IOException {
-        graphQLSchemaBuilder = new GraphQLSchemaBuilder(new ElasticsearchClient());
-        updateGraphQLSchema();
-    }
+  private void updateGraphQLSchema() throws IOException {
+    this.graphQL = GraphQL.newGraphQL(GraphQLSchemaBuilder.getSchema()).build();
+  }
 
-    private void updateGraphQLSchema() throws IOException {
-        this.graphQL = GraphQL.newGraphQL(graphQLSchemaBuilder.getSchema()).build();
-    }
-
-    @Bean
-    public GraphQL graphQL() {
-        return graphQL;
-    }
+  @Bean
+  public GraphQL graphQL() {
+    return graphQL;
+  }
 }
