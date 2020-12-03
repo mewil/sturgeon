@@ -11,19 +11,19 @@ import java.io.IOException;
 @Component
 public class GraphQLProvider {
 
-    private GraphQL graphQL;
+  private GraphQL graphQL;
 
-    @PostConstruct
-    public void init() throws IOException {
-        updateGraphQLSchema();
-    }
+  @PostConstruct
+  public void init() throws IOException {
+    updateGraphQLSchema();
+  }
 
-    private void updateGraphQLSchema() throws IOException {
-        this.graphQL = GraphQL.newGraphQL(GraphQLSchemaBuilder.getSchema()).build();
-    }
+  private void updateGraphQLSchema() throws IOException {
+    this.graphQL = GraphQL.newGraphQL(GraphQLSchemaBuilder.getSchema()).build();
+  }
 
-    @Bean
-    public GraphQL graphQL() {
-        return graphQL;
-    }
+  @Bean
+  public GraphQL graphQL() {
+    return graphQL;
+  }
 }

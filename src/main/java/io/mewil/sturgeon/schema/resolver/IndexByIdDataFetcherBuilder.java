@@ -21,13 +21,15 @@ public class IndexByIdDataFetcherBuilder extends DataFetcherBuilder {
   public DataFetcher<Map<String, Object>> build() {
     return dataFetchingEnvironment -> {
       final QueryFieldSelectorResult selectorResult =
-              QueryFieldSelector.getSelectedFieldsFromQuery(dataFetchingEnvironment);
+          QueryFieldSelector.getSelectedFieldsFromQuery(dataFetchingEnvironment);
       final String id = dataFetchingEnvironment.getArgument(SchemaConstants.ID).toString();
-      final GetResponse response = ElasticsearchClient.getInstance().queryById(index, id, selectorResult.getFields());
+      final GetResponse response =
+          ElasticsearchClient.getInstance().queryById(index, id, selectorResult.getFields());
       if (response.isSourceEmpty()) {
         return null;
       }
-      return ElasticsearchDecoder.decodeElasticsearchDoc(response.getSourceAsMap(), selectorResult.getIncludeId(), response.getId());
+      return ElasticsearchDecoder.decodeElasticsearchDoc(
+          response.getSourceAsMap(), selectorResult.getIncludeId(), response.getId());
     };
   }
 }

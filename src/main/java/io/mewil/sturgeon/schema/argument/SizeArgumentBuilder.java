@@ -7,11 +7,11 @@ import io.mewil.sturgeon.schema.SchemaConstants;
 
 public class SizeArgumentBuilder extends ArgumentBuilder {
 
-    @Override
-    public GraphQLArgument build() {
-        return GraphQLArgument.newArgument()
-                .name(SchemaConstants.SIZE)
-                .type(GraphQLNonNull.nonNull(Scalars.GraphQLInt))
-                .build();
-    }
+  @Override
+  public GraphQLArgument build() {
+    return GraphQLArgument.newArgument()
+        .name(SchemaConstants.SIZE)
+        .type(GraphQLNonNull.nonNull(Scalars.GraphQLInt))
+        .build();
+  }
 }

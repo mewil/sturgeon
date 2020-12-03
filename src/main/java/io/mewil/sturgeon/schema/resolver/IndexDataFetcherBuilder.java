@@ -2,9 +2,9 @@ package io.mewil.sturgeon.schema.resolver;
 
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import io.mewil.sturgeon.schema.types.BooleanQueryType;
 import io.mewil.sturgeon.ElasticsearchClient;
 import io.mewil.sturgeon.schema.SchemaConstants;
+import io.mewil.sturgeon.schema.types.BooleanQueryType;
 import io.mewil.sturgeon.schema.util.ElasticsearchDecoder;
 import io.mewil.sturgeon.schema.util.NameNormalizer;
 import io.mewil.sturgeon.schema.util.QueryFieldSelector;

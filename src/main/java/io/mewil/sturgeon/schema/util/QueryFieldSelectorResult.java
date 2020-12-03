@@ -8,6 +8,6 @@ import java.util.List;
 @Getter
 @Builder
 public class QueryFieldSelectorResult {
-    List<String> fields;
-    Boolean includeId;
+  List<String> fields;
+  Boolean includeId;
 }

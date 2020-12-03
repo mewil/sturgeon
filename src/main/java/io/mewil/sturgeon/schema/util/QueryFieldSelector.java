@@ -9,17 +9,20 @@ import java.util.stream.Collectors;
 
 public class QueryFieldSelector {
 
-    public static QueryFieldSelectorResult getSelectedFieldsFromQuery(final DataFetchingEnvironment dataFetchingEnvironment) {
-        final List<String> selectedGraphQLFields = dataFetchingEnvironment.getSelectionSet().getFields().stream()
-                .map(SelectedField::getName)
-                .collect(Collectors.toList());
-        final boolean includeId = selectedGraphQLFields.remove(SchemaConstants.ID);
-        final List<String> selectedIndexFields = selectedGraphQLFields.stream()
-                .map(f -> NameNormalizer.getInstance().getOriginalName(f))
-                .collect(Collectors.toList());
-        return QueryFieldSelectorResult.builder()
-                .fields(selectedIndexFields)
-                .includeId(includeId)
-                .build();
-    }
+  public static QueryFieldSelectorResult getSelectedFieldsFromQuery(
+      final DataFetchingEnvironment dataFetchingEnvironment) {
+    final List<String> selectedGraphQLFields =
+        dataFetchingEnvironment.getSelectionSet().getFields().stream()
+            .map(SelectedField::getName)
+            .collect(Collectors.toList());
+    final boolean includeId = selectedGraphQLFields.remove(SchemaConstants.ID);
+    final List<String> selectedIndexFields =
+        selectedGraphQLFields.stream()
+            .map(f -> NameNormalizer.getInstance().getOriginalName(f))
+            .collect(Collectors.toList());
+    return QueryFieldSelectorResult.builder()
+        .fields(selectedIndexFields)
+        .includeId(includeId)
+        .build();
+  }
 }
