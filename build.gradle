@@ -20,12 +20,11 @@ dependencies {
 	implementation 'org.elasticsearch:elasticsearch:7.9.3'
 	implementation 'com.google.guava:guava:30.0-jre'
 	implementation 'org.projectlombok:lombok:1.18.16'
-	annotationProcessor 'org.projectlombok:lombok:1.18.16'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	annotationProcessor 'org.projectlombok:lombok:1.18.16'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-// TODO: enable tests
-//test {
-//	useJUnitPlatform()
-//}
+test {
+	useJUnitPlatform()
+}

@@ -5,18 +5,15 @@ import com.google.common.collect.HashBiMap;
 
 public final class NameNormalizer {
 
-  private static NameNormalizer INSTANCE;
-
-  private final BiMap<String, String> normalizedNameLookupTable = HashBiMap.create();
-
-  private NameNormalizer() {}
+  private static class LazyHolder {
+    private static final NameNormalizer INSTANCE = new NameNormalizer();
+  }
 
   public static NameNormalizer getInstance() {
-    if (INSTANCE == null) {
-      INSTANCE = new NameNormalizer();
-    }
-    return INSTANCE;
+    return LazyHolder.INSTANCE;
   }
+
+  private final BiMap<String, String> normalizedNameLookupTable = HashBiMap.create();
 
   public void addName(final String originalName) {
     normalizedNameLookupTable.put(originalName, normalizeName(originalName));
@@ -31,7 +28,8 @@ public final class NameNormalizer {
   }
 
   private static String normalizeName(final String name) {
-    return name.replaceAll("(^[0-9])", "_$1")
+    return name
+        .replaceAll("(^[0-9])", "_$1")
         .replace(" ", "_")
         .replace("+", "plus_")
         .replace("-", "minus_")
