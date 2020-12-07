@@ -2,13 +2,22 @@ package io.mewil.sturgeon.schema.argument;
 
 import graphql.Scalars;
 import graphql.scalars.ExtendedScalars;
-import graphql.schema.*;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLScalarType;
 import io.mewil.sturgeon.schema.SchemaConstants;
 import io.mewil.sturgeon.schema.types.BooleanQueryType;
 import io.mewil.sturgeon.schema.util.ElasticsearchDecoder;
 import io.mewil.sturgeon.schema.util.NameNormalizer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class BooleanQueryArgumentBuilder extends ArgumentBuilder {

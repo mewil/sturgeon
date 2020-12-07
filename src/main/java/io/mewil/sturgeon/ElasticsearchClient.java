@@ -18,27 +18,24 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class ElasticsearchClient {
 
-    private static ElasticsearchClient INSTANCE;
+    private static class LazyHolder {
+        private static final ElasticsearchClient INSTANCE = new ElasticsearchClient();
+    }
+
+    public static ElasticsearchClient getInstance() {
+        return LazyHolder.INSTANCE;
+    }
 
     private final RestHighLevelClient client;
 
-    public static ElasticsearchClient getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new ElasticsearchClient();
-        }
-        return INSTANCE;
-    }
-
-
     private ElasticsearchClient() {
-        HttpHost[] hosts = Arrays.stream(System.getenv("ELASTICSEARCH_HOSTS").split(","))
+        final HttpHost[] hosts = Configuration.getInstance().getElasticsearchHosts().stream()
                 .map(s -> {
                     String[] parts = s.split(":");
                     if (parts.length != 2) {
@@ -54,6 +51,7 @@ public final class ElasticsearchClient {
         GetMappingsRequest request = new GetMappingsRequest();
         GetMappingsResponse response = client.indices().getMapping(request, RequestOptions.DEFAULT);
         return response.mappings().entrySet().stream()
+                .filter(e -> Configuration.getInstance().getElasticsearchIndexIncludePattern().matcher(e.getKey()).matches())
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getSourceAsMap()));
     }
 
