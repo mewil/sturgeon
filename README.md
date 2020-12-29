@@ -8,7 +8,10 @@ Dynamic GraphQL API for [Elasticsearch](https://elastic.co/).
 
 Sturgeon dynamically creates GraphQL schemas and resolvers for each index in an Elasticsearch cluster.
 It currently provides schemas for querying documents by ID, a list of documents, and several simple aggregations.
-More complex arguments and search options will be available soon. 
+Users can specify search parameters using the `boolean_query` argument, which supports boolean [range queries](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-range-query.html) for float, integer and timestamp values.
+More complex arguments and search options will be available soon.
+
+_The above image shows example queries for the three schemas generated for a single index._ 
 
 ## Docker Quickstart
 
@@ -26,7 +29,7 @@ Sturgeon can be configured using the following environment variables:
 | Variable                              | Description                                                                                        | Default |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------- | ------- |
 | `ELASTICSEARCH_HOSTS`                 | A comma-separated list of Elasticsearch hosts                                                      | None    |
-| `ELASTICSEARCH_INDEX_INCLUDE_PATTERN` | A regular expression that determine which Elasticsearch indices are used to create GraphQL schemas | `".*"`  |
+| `ELASTICSEARCH_INDEX_INCLUDE_PATTERN` | A regular expression that determines which Elasticsearch indices are used to create GraphQL schemas | `".*"`  |
 | `ENABLE_AGGREGATIONS`                 | Used to enable or disable aggregation schemas                                                      | `true`  |
 
 
