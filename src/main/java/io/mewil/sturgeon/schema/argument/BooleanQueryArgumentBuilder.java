@@ -1,5 +1,6 @@
 package io.mewil.sturgeon.schema.argument;
 
+import com.google.common.collect.ImmutableSet;
 import graphql.Scalars;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLArgument;
@@ -24,6 +25,14 @@ public class BooleanQueryArgumentBuilder extends ArgumentBuilder {
 
   private final String index;
   private final Map<String, Object> mapping;
+
+  private final ImmutableSet<GraphQLScalarType> SUPPORTED_SCALARS =
+      ImmutableSet.of(
+          Scalars.GraphQLFloat,
+          Scalars.GraphQLShort,
+          Scalars.GraphQLInt,
+          Scalars.GraphQLLong,
+          ExtendedScalars.DateTime);
 
   public BooleanQueryArgumentBuilder(final Map.Entry<String, Map<String, Object>> indexMapping) {
     this.index = indexMapping.getKey();
@@ -84,44 +93,53 @@ public class BooleanQueryArgumentBuilder extends ArgumentBuilder {
     }
     final GraphQLScalarType scalarType =
         ElasticsearchDecoder.mapToGraphQLScalarType(type.toString());
-    if (Scalars.GraphQLFloat.equals(scalarType) || ExtendedScalars.DateTime.equals(scalarType)) {
+    if (SUPPORTED_SCALARS.contains(scalarType)) {
       return Optional.of(
           GraphQLInputObjectField.newInputObjectField()
-              .type(buildBooleanQueryArgumentType(field.getKey(), scalarType, booleanQueryType))
+              .type(buildTermLevelQueryArgumentTypes(field.getKey(), scalarType, booleanQueryType))
               .name(NameNormalizer.getInstance().getGraphQLName(field.getKey()))
               .build());
     }
     return Optional.empty();
   }
 
-  private GraphQLInputObjectType buildBooleanQueryArgumentType(
+  private GraphQLInputObjectType buildTermLevelQueryArgumentTypes(
+      final String fieldName,
+      final GraphQLScalarType type,
+      final BooleanQueryType booleanQueryType) {
+    final List<GraphQLInputObjectField> termLevelQueries = new ArrayList<>();
+
+    termLevelQueries.add(
+        GraphQLInputObjectField.newInputObjectField()
+            .name("range")
+            .type(buildRangeQueryArgumentType(fieldName, type, booleanQueryType))
+            .build());
+
+    final String typeName =
+        String.format(
+            "%s_boolean_query_%s_%s",
+            index,
+            NameNormalizer.getInstance().getGraphQLName(fieldName),
+            booleanQueryType.getName());
+    return GraphQLInputObjectType.newInputObject().fields(termLevelQueries).name(typeName).build();
+  }
+
+  private GraphQLInputObjectType buildRangeQueryArgumentType(
       final String fieldName,
       final GraphQLScalarType type,
       final BooleanQueryType booleanQueryType) {
     final List<GraphQLInputObjectField> fields = new ArrayList<>();
-    if (Scalars.GraphQLFloat.equals(type) || ExtendedScalars.DateTime.equals(type)) {
+    if (SUPPORTED_SCALARS.contains(type)) {
       fields.addAll(
           List.of(
-              GraphQLInputObjectField.newInputObjectField()
-                  .name("gt")
-                  .type(Scalars.GraphQLFloat)
-                  .build(),
-              GraphQLInputObjectField.newInputObjectField()
-                  .name("gte")
-                  .type(Scalars.GraphQLFloat)
-                  .build(),
-              GraphQLInputObjectField.newInputObjectField()
-                  .name("lt")
-                  .type(Scalars.GraphQLFloat)
-                  .build(),
-              GraphQLInputObjectField.newInputObjectField()
-                  .name("lte")
-                  .type(Scalars.GraphQLFloat)
-                  .build()));
+              GraphQLInputObjectField.newInputObjectField().name("gt").type(type).build(),
+              GraphQLInputObjectField.newInputObjectField().name("gte").type(type).build(),
+              GraphQLInputObjectField.newInputObjectField().name("lt").type(type).build(),
+              GraphQLInputObjectField.newInputObjectField().name("lte").type(type).build()));
     }
     final String typeName =
         String.format(
-            "%s_boolean_query_%s_%s",
+            "%s_range_query_%s_%s",
             index,
             NameNormalizer.getInstance().getGraphQLName(fieldName),
             booleanQueryType.getName());

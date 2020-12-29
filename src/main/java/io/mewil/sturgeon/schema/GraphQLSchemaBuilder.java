@@ -30,11 +30,15 @@ public final class GraphQLSchemaBuilder {
     return buildSchemaFromIndexMappings(ElasticsearchClient.getInstance().getMappings());
   }
 
-  private static GraphQLSchema buildSchemaFromIndexMappings(final Map<String, Map<String, Object>> mappings) {
-    return new GraphQLSchema.Builder().query(new GraphQLObjectType.Builder()
-            .name("Query")
-            .fields(buildSchemasFromIndexMappings(mappings))
-            .build()).build();
+  private static GraphQLSchema buildSchemaFromIndexMappings(
+      final Map<String, Map<String, Object>> mappings) {
+    return new GraphQLSchema.Builder()
+        .query(
+            new GraphQLObjectType.Builder()
+                .name("Query")
+                .fields(buildSchemasFromIndexMappings(mappings))
+                .build())
+        .build();
   }
 
   private static List<GraphQLFieldDefinition> buildSchemasFromIndexMappings(
@@ -51,7 +55,8 @@ public final class GraphQLSchemaBuilder {
     final String normalizedIndexName =
         NameNormalizer.getInstance().getGraphQLName(indexMapping.getKey());
     final GraphQLObjectType documentType = new DocumentTypeBuilder(indexMapping).build();
-    final GraphQLArgument booleanQueryArguments = new BooleanQueryArgumentBuilder(indexMapping).build();
+    final GraphQLArgument booleanQueryArguments =
+        new BooleanQueryArgumentBuilder(indexMapping).build();
 
     final Stream<GraphQLFieldDefinition> schemas =
         Stream.of(
@@ -76,6 +81,7 @@ public final class GraphQLSchemaBuilder {
                 new GraphQLFieldDefinition.Builder()
                     .name(String.format("%s_aggregations", normalizedIndexName))
                     .type(new DocumentAggregationTypeBuilder(indexMapping).build())
+                    .argument(booleanQueryArguments)
                     .dataFetcher(environment -> environment.getSelectionSet().getFields())
                     .build()))
         : schemas;

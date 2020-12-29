@@ -81,8 +81,10 @@ public final class ElasticsearchClient {
     }
 
     public SearchResponse queryWithAggregation(final String index, final List<String> selectedFields,
+                                               final List<QueryBuilder> queryBuilders,
                                                final AggregationType aggregationType) throws IOException {
         final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().size(0);
+        queryBuilders.forEach(sourceBuilder::query);
         selectedFields.forEach(field -> {
             switch (aggregationType) {
                 case AVG -> sourceBuilder.aggregation(AggregationBuilders.avg(field).field(field));
