@@ -1,4 +1,4 @@
-package io.mewil.sturgeon.schema.resolver;
+package io.mewil.sturgeon.elasticsearch;
 
 import io.mewil.sturgeon.schema.SchemaConstants;
 import io.mewil.sturgeon.schema.types.BooleanQueryType;
@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 public final class QueryAdapter {
+    private QueryAdapter() {}
 
     public static List<QueryBuilder> buildQueryFromArguments(final Map<String, Object> arguments) {
         final List<QueryBuilder> queryBuilders = new ArrayList<>();

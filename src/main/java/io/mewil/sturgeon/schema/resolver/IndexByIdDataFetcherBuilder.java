@@ -1,9 +1,9 @@
 package io.mewil.sturgeon.schema.resolver;
 
 import graphql.schema.DataFetcher;
-import io.mewil.sturgeon.ElasticsearchClient;
+import io.mewil.sturgeon.elasticsearch.ElasticsearchClient;
 import io.mewil.sturgeon.schema.SchemaConstants;
-import io.mewil.sturgeon.schema.util.ElasticsearchDecoder;
+import io.mewil.sturgeon.elasticsearch.ElasticsearchDecoder;
 import io.mewil.sturgeon.schema.util.QueryFieldSelector;
 import io.mewil.sturgeon.schema.util.QueryFieldSelectorResult;
 import org.elasticsearch.action.get.GetResponse;

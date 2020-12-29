@@ -10,7 +10,7 @@ import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLScalarType;
 import io.mewil.sturgeon.schema.SchemaConstants;
 import io.mewil.sturgeon.schema.types.BooleanQueryType;
-import io.mewil.sturgeon.schema.util.ElasticsearchDecoder;
+import io.mewil.sturgeon.elasticsearch.ElasticsearchDecoder;
 import io.mewil.sturgeon.schema.util.NameNormalizer;
 
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ public class BooleanQueryArgumentBuilder extends ArgumentBuilder {
   private final String index;
   private final Map<String, Object> mapping;
 
-  private final ImmutableSet<GraphQLScalarType> SUPPORTED_SCALARS =
+  private static final ImmutableSet<GraphQLScalarType> SUPPORTED_SCALARS =
       ImmutableSet.of(
           Scalars.GraphQLFloat,
           Scalars.GraphQLShort,

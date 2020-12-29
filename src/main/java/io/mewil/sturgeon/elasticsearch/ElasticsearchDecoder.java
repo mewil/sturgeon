@@ -1,9 +1,10 @@
-package io.mewil.sturgeon.schema.util;
+package io.mewil.sturgeon.elasticsearch;
 
 import graphql.Scalars;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.GraphQLScalarType;
 import io.mewil.sturgeon.schema.SchemaConstants;
+import io.mewil.sturgeon.schema.util.NameNormalizer;
 
 import java.util.Map;
 import java.util.stream.Collectors;

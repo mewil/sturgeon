@@ -1,7 +1,7 @@
 package io.mewil.sturgeon.schema.resolver;
 
 import graphql.schema.DataFetcher;
-import io.mewil.sturgeon.ElasticsearchClient;
+import io.mewil.sturgeon.elasticsearch.ElasticsearchClient;
 import io.mewil.sturgeon.schema.SchemaConstants;
 import io.mewil.sturgeon.schema.util.QueryFieldSelector;
 import io.mewil.sturgeon.schema.util.QueryFieldSelectorResult;
@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.mewil.sturgeon.schema.resolver.QueryAdapter.buildQueryFromArguments;
-import static io.mewil.sturgeon.schema.util.ElasticsearchDecoder.decodeElasticsearchDoc;
+import static io.mewil.sturgeon.elasticsearch.QueryAdapter.buildQueryFromArguments;
+import static io.mewil.sturgeon.elasticsearch.ElasticsearchDecoder.decodeElasticsearchDoc;
 
 public class IndexDataFetcherBuilder extends DataFetcherBuilder {
   public IndexDataFetcherBuilder(String index) {

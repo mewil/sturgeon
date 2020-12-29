@@ -3,7 +3,7 @@ package io.mewil.sturgeon.schema.types;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLScalarType;
 import io.mewil.sturgeon.schema.SchemaConstants;
-import io.mewil.sturgeon.schema.util.ElasticsearchDecoder;
+import io.mewil.sturgeon.elasticsearch.ElasticsearchDecoder;
 import io.mewil.sturgeon.schema.util.NameNormalizer;
 
 import java.util.HashMap;

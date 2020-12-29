@@ -6,7 +6,7 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import io.mewil.sturgeon.Configuration;
-import io.mewil.sturgeon.ElasticsearchClient;
+import io.mewil.sturgeon.elasticsearch.ElasticsearchClient;
 import io.mewil.sturgeon.schema.argument.BooleanQueryArgumentBuilder;
 import io.mewil.sturgeon.schema.argument.IdArgumentBuilder;
 import io.mewil.sturgeon.schema.argument.SizeArgumentBuilder;

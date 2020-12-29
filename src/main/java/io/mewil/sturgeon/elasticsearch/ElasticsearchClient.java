@@ -1,5 +1,6 @@
-package io.mewil.sturgeon;
+package io.mewil.sturgeon.elasticsearch;
 
+import io.mewil.sturgeon.Configuration;
 import io.mewil.sturgeon.schema.types.AggregationType;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.get.GetRequest;
