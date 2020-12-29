@@ -5,6 +5,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import io.mewil.sturgeon.ElasticsearchClient;
+import io.mewil.sturgeon.schema.resolver.QueryAdapter;
 import io.mewil.sturgeon.schema.util.NameNormalizer;
 import io.mewil.sturgeon.schema.util.QueryFieldSelector;
 import io.mewil.sturgeon.schema.util.QueryFieldSelectorResult;
@@ -76,10 +77,17 @@ public class DocumentAggregationTypeBuilder extends TypeBuilder {
         return dataFetchingEnvironment -> {
             final QueryFieldSelectorResult selectorResult =
                     QueryFieldSelector.getSelectedFieldsFromQuery(dataFetchingEnvironment);
-            final SearchResponse response = ElasticsearchClient.getInstance().queryWithAggregation(index, selectorResult.getFields(), aggregationType);
+            final SearchResponse response = ElasticsearchClient.getInstance().queryWithAggregation(
+                    index,
+                    selectorResult.getFields(),
+                            QueryAdapter.buildQueryFromArguments(dataFetchingEnvironment.getExecutionStepInfo().getParent().getArguments()),
+                            aggregationType);
             return response.getAggregations().asMap().entrySet().stream()
                     .map(DocumentAggregationTypeBuilder::normalizeAggregationTypes)
-                    .collect(Collectors.toMap(entry -> NameNormalizer.getInstance().getGraphQLName(entry.getKey()), Map.Entry::getValue));
+                    .map(DocumentAggregationTypeBuilder::changeInfinityToNull)
+                    // Fix to avoid null values here causing exceptions
+                    // https://stackoverflow.com/questions/24630963/java-8-nullpointerexception-in-collectors-tomap
+                    .collect(HashMap::new, (m, e) -> m.put(NameNormalizer.getInstance().getGraphQLName(e.getKey()), e.getValue()), HashMap::putAll);
         };
     }
 
@@ -89,5 +97,13 @@ public class DocumentAggregationTypeBuilder extends TypeBuilder {
             case "max" -> new HashMap.SimpleEntry<>(field.getKey(), ((ParsedMax) field.getValue()).getValue());
             default -> new HashMap.SimpleEntry<>(field.getKey(), ((ParsedMin) field.getValue()).getValue());
         };
+    }
+
+    // TODO: make this more elegant
+    private static Map.Entry<String, Object> changeInfinityToNull(final Map.Entry<String, Object> entry) {
+        if (entry.getValue() instanceof Double && ((Double) entry.getValue()).isInfinite()) {
+            return new HashMap.SimpleEntry<>(entry.getKey(), null);
+        }
+        return entry;
     }
 }

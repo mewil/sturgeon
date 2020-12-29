@@ -28,12 +28,10 @@ public final class NameNormalizer {
   }
 
   private static String normalizeName(final String name) {
-    return name
-        .replaceAll("(^[0-9])", "_$1")
+    return name.replaceAll("(^[0-9])", "_$1")
+        .replaceAll("[()?@#]", "")
         .replace(" ", "_")
         .replace("+", "plus_")
-        .replace("-", "minus_")
-        .replace("@", "")
-        .replace("#", "");
+        .replace("-", "minus_");
   }
 }
