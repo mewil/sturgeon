@@ -10,8 +10,8 @@ import io.mewil.sturgeon.elasticsearch.ElasticsearchClient;
 import io.mewil.sturgeon.schema.argument.BooleanQueryArgumentBuilder;
 import io.mewil.sturgeon.schema.argument.IdArgumentBuilder;
 import io.mewil.sturgeon.schema.argument.SizeArgumentBuilder;
-import io.mewil.sturgeon.schema.resolver.IndexByIdDataFetcherBuilder;
-import io.mewil.sturgeon.schema.resolver.IndexDataFetcherBuilder;
+import io.mewil.sturgeon.schema.resolver.DocumentByIdDataFetcherBuilder;
+import io.mewil.sturgeon.schema.resolver.DocumentDataFetcherBuilder;
 import io.mewil.sturgeon.schema.types.DocumentAggregationTypeBuilder;
 import io.mewil.sturgeon.schema.types.DocumentTypeBuilder;
 import io.mewil.sturgeon.schema.util.NameNormalizer;
@@ -65,13 +65,13 @@ public final class GraphQLSchemaBuilder {
                 .type(GraphQLList.list(documentType))
                 .argument(new SizeArgumentBuilder().build())
                 .argument(booleanQueryArguments)
-                .dataFetcher(new IndexDataFetcherBuilder(normalizedIndexName).build())
+                .dataFetcher(new DocumentDataFetcherBuilder(normalizedIndexName).build())
                 .build(),
             new GraphQLFieldDefinition.Builder()
                 .name(String.format("%s_by_id", normalizedIndexName))
                 .type(documentType)
                 .argument(new IdArgumentBuilder().build())
-                .dataFetcher(new IndexByIdDataFetcherBuilder(normalizedIndexName).build())
+                .dataFetcher(new DocumentByIdDataFetcherBuilder(normalizedIndexName).build())
                 .build());
 
     return Configuration.getInstance().getEnableAggregations()

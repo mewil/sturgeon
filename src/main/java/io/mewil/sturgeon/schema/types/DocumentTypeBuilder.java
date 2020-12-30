@@ -37,7 +37,7 @@ public class DocumentTypeBuilder extends TypeBuilder {
                   final Map<String, Object> properties = (HashMap<String, Object>) entry.getValue();
                   return properties.entrySet().stream();
                 })
-            .map(field -> FieldDefinitionBuilder.fromIndexMappingField(null, field))
+            .map(FieldDefinitionBuilder::fieldDefinitionForDocumentField)
             .filter(Optional::isPresent)
             .map(Optional::get)
             // .sorted() TODO: implement comparator

@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 import static io.mewil.sturgeon.elasticsearch.QueryAdapter.buildQueryFromArguments;
 import static io.mewil.sturgeon.elasticsearch.ElasticsearchDecoder.decodeElasticsearchDoc;
 
-public class IndexDataFetcherBuilder extends DataFetcherBuilder {
-  public IndexDataFetcherBuilder(String index) {
+public class DocumentDataFetcherBuilder extends DataFetcherBuilder {
+  public DocumentDataFetcherBuilder(String index) {
     this.index = index;
   }
 

@@ -10,8 +10,8 @@ import org.elasticsearch.action.get.GetResponse;
 
 import java.util.Map;
 
-public class IndexByIdDataFetcherBuilder extends DataFetcherBuilder {
-  public IndexByIdDataFetcherBuilder(String index) {
+public class DocumentByIdDataFetcherBuilder extends DataFetcherBuilder {
+  public DocumentByIdDataFetcherBuilder(String index) {
     this.index = index;
   }
 
