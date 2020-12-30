@@ -13,6 +13,7 @@ public class QueryFieldSelector {
       final DataFetchingEnvironment dataFetchingEnvironment) {
     final List<String> selectedGraphQLFields =
         dataFetchingEnvironment.getSelectionSet().getFields().stream()
+            .filter(f -> List.of("/key", "/value").stream().noneMatch(s -> f.getQualifiedName().endsWith(s)))
             .map(SelectedField::getName)
             .collect(Collectors.toList());
     final boolean includeId = selectedGraphQLFields.remove(SchemaConstants.ID);

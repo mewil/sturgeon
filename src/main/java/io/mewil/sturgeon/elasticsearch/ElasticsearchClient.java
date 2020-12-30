@@ -91,6 +91,8 @@ public final class ElasticsearchClient {
                 case AVG -> sourceBuilder.aggregation(AggregationBuilders.avg(field).field(field));
                 case MAX -> sourceBuilder.aggregation(AggregationBuilders.max(field).field(field));
                 case MIN -> sourceBuilder.aggregation(AggregationBuilders.min(field).field(field));
+                case CARDINALITY -> sourceBuilder.aggregation(AggregationBuilders.cardinality(field).field(field));
+                case PERCENTILES -> sourceBuilder.aggregation(AggregationBuilders.percentiles(field).field(field));
             }
         });
         return doQueryFromSearchSourceBuilder(index, sourceBuilder);
