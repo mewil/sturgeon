@@ -25,9 +25,6 @@ func allowCorsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func setupHeader(rw http.ResponseWriter, req *http.Request) {
-}
-
 func main() {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
@@ -95,6 +92,7 @@ func buildSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.
 	schemas := graphql.Fields{}
 	for index, mapping := range mappings {
 		for _, schema := range buildSchemasFromMapping(index, mapping.(map[string]interface{})["mappings"].(map[string]interface{}), es) {
+			schema := schema //pin
 			schemas[schema.Name] = &schema
 		}
 	}
@@ -105,6 +103,7 @@ func buildSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.
 
 func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *elasticsearch.Client) []graphql.Field {
 	documentType := buildDocumentTypeFromMapping(index, mapping["properties"].(map[string]interface{}))
+	documentAggregationType := buildDocumentAggregationTypeFromMapping(index, mapping["properties"].(map[string]interface{}), es)
 
 	documentListSchema := graphql.Field{
 		Name: index,
@@ -116,92 +115,68 @@ func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *e
 			},
 		},
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-			selectedFields, _ := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
+			selectedFields, includeIdField := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
 			size, _ := getSizeArgument(p.Args)
 			res := query(es, p.Context, index, size, selectedFields)
-			doc := convertSourceDocumentsToQueryResult(res, selectedFields)
+			docs := convertSourceDocumentsToQueryResult(res, includeIdField)
+			return docs, nil
+		},
+		Description: "",
+	}
+	documentByIdSchema := graphql.Field{
+		Name: index + "_by_id",
+		Type: documentType,
+		Args: graphql.FieldConfigArgument{
+			"id": &graphql.ArgumentConfig{
+				Type:        graphql.NewNonNull(graphql.ID),
+				Description: "",
+			},
+		},
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			selectedFields, includeIdField := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
+			res := queryById(es, p.Context, index, p.Args["id"].(string), selectedFields)
+			doc := convertSourceDocumentsToQueryResult([]interface{}{res}, includeIdField)[0]
 			return doc, nil
 		},
 		Description: "",
 	}
-	//documentByIdSchema := graphql.Field{
-	//	Name: index + "_by_id",
-	//	Type: documentType,
-	//	Args: nil,
-	//	Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-	//		return nil, nil
-	//	},
-	//	Description: "",
-	//}
+	documentAggregationSchema := graphql.Field{
+		Name: index + "_aggregations",
+		Type: documentAggregationType,
+		Args: nil,
+		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			return p.Info.Operation.GetSelectionSet().Selections, nil
+		},
+		Description: "",
+	}
 
 	return []graphql.Field{
 		documentListSchema,
-		//documentByIdSchema,
+		documentByIdSchema,
+		documentAggregationSchema,
 	}
 }
 
-func convertSourceDocumentsToQueryResult(documents []interface{}, selectedFields []string) []interface{} {
+func convertSourceDocumentsToQueryResult(documents []interface{}, includeIdField bool) []interface{} {
 	results := make([]interface{}, len(documents))
-	for i, doc := range documents {
-		source := doc.(map[string]interface{})["_source"].(map[string]interface{})
-		fields := make(map[string]interface{}, len(source))
-		for key, value := range source {
-			fields[getGraphQLName(key)] = value
+	for i, document := range documents {
+		doc := document.(map[string]interface{})
+		source := doc["_source"].(map[string]interface{})
+		fields := convertSourceToQueryResult(source)
+		if includeIdField {
+			fields["id"] = doc["_id"]
 		}
 		results[i] = fields
 	}
 	return results
 }
 
-func query(es *elasticsearch.Client, ctx context.Context, index string, size int, selectedFields []string) []interface{} {
-	// Build the request body.
-	//var buf bytes.Buffer
-	//query := map[string]interface{}{
-	//	"query": map[string]interface{}{
-	//		"match": map[string]interface{}{
-	//			"title": "test",
-	//		},
-	//	},
-	//}
-	//if err := json.NewEncoder(&buf).Encode(query); err != nil {
-	//	log.Fatalf("Error encoding query: %s", err)
-	//}
-
-	// Perform the search request.
-	res, err := es.Search(
-		es.Search.WithSource(selectedFields...),
-		es.Search.WithContext(ctx),
-		es.Search.WithIndex(index),
-		es.Search.WithSize(size),
-		//es.Search.WithBody(&buf),
-		//es.Search.WithTrackTotalHits(true),
-		//es.Search.WithPretty(),
-	)
-	if err != nil {
-		log.Fatalf("Error getting response: %s", err)
+func convertSourceToQueryResult(source map[string]interface{}) map[string]interface{} {
+	fields := make(map[string]interface{}, len(source))
+	for key, value := range source {
+		fields[getGraphQLName(key)] = value
 	}
-	defer res.Body.Close()
-
-	if res.IsError() {
-		var e map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&e); err != nil {
-			log.Fatalf("Error parsing the response body: %s", err)
-		} else {
-			// Print the response status and error information.
-			log.Fatalf("[%s] %s: %s",
-				res.Status(),
-				e["error"].(map[string]interface{})["type"],
-				e["error"].(map[string]interface{})["reason"],
-			)
-		}
-	}
-
-	r := make(map[string]interface{})
-	if err := json.NewDecoder(res.Body).Decode(&r); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
-	}
-	log.Println(r)
-	return r["hits"].(map[string]interface{})["hits"].([]interface{})
+	return fields
 }
 
 func getSizeArgument(args map[string]interface{}) (int, error) {
@@ -218,9 +193,70 @@ func getSizeArgument(args map[string]interface{}) (int, error) {
 }
 
 func buildDocumentTypeFromMapping(index string, mapping map[string]interface{}) *graphql.Object {
+	fields := getFields(mapping)
+	fields["id"] = &graphql.Field{
+		Name:              "id",
+		Type:              graphql.ID,
+		Args:              nil,
+		Resolve:           nil,
+		DeprecationReason: "",
+		Description:       "",
+	}
 	return graphql.NewObject(graphql.ObjectConfig{
 		Name:        index + "document",
-		Fields:      getFields(mapping),
+		Fields:      fields,
+		Description: "",
+		//Name:        "",
+		//Interfaces:  nil,
+		//Fields:      nil,
+		//IsTypeOf:    nil,
+		//Description: "",
+	})
+}
+
+type AggregationType string
+
+const (
+	AggregationTypeMin AggregationType = "min"
+	AggregationTypeMax AggregationType = "max"
+	AggregationTypeAvg AggregationType = "avg"
+)
+
+func buildDocumentAggregationTypeFromMapping(index string, mapping map[string]interface{}, es *elasticsearch.Client) *graphql.Object {
+	aggregationTypes := []AggregationType{
+		AggregationTypeMin,
+		AggregationTypeMax,
+		AggregationTypeAvg,
+	}
+	fields := make(graphql.Fields)
+	for _, aggregationType := range aggregationTypes {
+		fields[string(aggregationType)] = &graphql.Field{
+			Name: index + "agg" + string(aggregationType),
+			Type: graphql.NewObject(graphql.ObjectConfig{
+				Name:        index + "agg" + string(aggregationType),
+				Fields:      getFields(mapping),
+				Description: "",
+				//Name:        "",
+				//Interfaces:  nil,
+				//Fields:      nil,
+				//IsTypeOf:    nil,
+				//Description: "",
+			}),
+			Args: nil,
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				selectionSet := p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet()
+				selectedFields, _ := getSelectedFieldsFromQuery(selectionSet)
+				size, _ := getSizeArgument(p.Args)
+				res := queryAggregation(es, p.Context, index, size, selectedFields, AggregationType(p.Info.FieldName))
+				doc := convertSourceToQueryResult(res)
+				return doc, nil
+			},
+			Description: "",
+		}
+	}
+	return graphql.NewObject(graphql.ObjectConfig{
+		Name:        index + "agg",
+		Fields:      fields,
 		Description: "",
 		//Name:        "",
 		//Interfaces:  nil,
