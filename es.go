@@ -9,19 +9,35 @@ import (
 	"log"
 )
 
-func query(es *elasticsearch.Client, ctx context.Context, index string, size int, selectedFields []string) []interface{} {
-	// Build the request body.
-	//var buf bytes.Buffer
-	//query := map[string]interface{}{
-	//	"query": map[string]interface{}{
-	//		"match": map[string]interface{}{
-	//			"title": "test",
-	//		},
-	//	},
-	//}
-	//if err := json.NewEncoder(&buf).Encode(query); err != nil {
-	//	log.Fatalf("Error encoding query: %s", err)
-	//}
+func query(es *elasticsearch.Client, ctx context.Context, index string, size int, selectedFields []string, args map[string]interface{}) []interface{} {
+	//Build the request body.
+	q := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{},
+		},
+	}
+
+	if boolQuery, exists := args["boolean_query"]; exists {
+		for clause := range boolQuery.(map[string]interface{}) {
+			for field := range boolQuery.(map[string]interface{})[clause].(map[string]interface{}) {
+				for termLevel := range boolQuery.(map[string]interface{})[clause].(map[string]interface{})[field].(map[string]interface{}) {
+					sq := q["query"].(map[string]interface{})
+					sq["bool"] = map[string]interface{}{
+						clause: map[string]interface{}{
+							termLevel: map[string]interface{}{
+								getOriginalName(field): boolQuery.(map[string]interface{})[clause].(map[string]interface{})[field].(map[string]interface{})[termLevel],
+							},
+						},
+					}
+				}
+			}
+		}
+
+	}
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(q); err != nil {
+		log.Fatalf("Error encoding query: %s", err)
+	}
 
 	// Perform the search request.
 	res, err := es.Search(
@@ -29,7 +45,7 @@ func query(es *elasticsearch.Client, ctx context.Context, index string, size int
 		es.Search.WithContext(ctx),
 		es.Search.WithIndex(index),
 		es.Search.WithSize(size),
-		//es.Search.WithBody(&buf),
+		es.Search.WithBody(&buf),
 		//es.Search.WithTrackTotalHits(true),
 		//es.Search.WithPretty(),
 	)
