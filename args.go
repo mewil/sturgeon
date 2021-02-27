@@ -16,7 +16,6 @@ func getSizeArgument(args map[string]interface{}) (int, error) {
 		return 0, fmt.Errorf("argument size was not an int")
 	}
 	return size, nil
-
 }
 
 type BooleanQueryType string
@@ -28,22 +27,20 @@ const (
 	BooleanQueryTypeShould  BooleanQueryType = "should"
 )
 
-var (
-	booleanQueryTypes = []BooleanQueryType{
-		BooleanQueryTypeMust,
-		BooleanQueryTypeMustNot,
-		BooleanQueryTypeFilter,
-		BooleanQueryTypeShould,
-	}
-)
+var booleanQueryTypes = []BooleanQueryType{
+	BooleanQueryTypeMust,
+	BooleanQueryTypeMustNot,
+	BooleanQueryTypeFilter,
+	BooleanQueryTypeShould,
+}
 
 func buildBooleanQueryTypes(index string, mapping map[string]interface{}) *graphql.ArgumentConfig {
 	fields := make(graphql.InputObjectConfigFieldMap)
 	for _, booleanQueryType := range booleanQueryTypes {
 		subFields := make(graphql.InputObjectConfigFieldMap)
-
 		for name, field := range mapping {
-			if strings.HasPrefix(name, "raw") {
+			// TODO: consolidate shared logic with getFields method
+			if strings.HasPrefix(name, Config.FieldIgnorePrefix) {
 				continue
 			}
 			addName(name)
@@ -57,29 +54,24 @@ func buildBooleanQueryTypes(index string, mapping map[string]interface{}) *graph
 			subFields[graphQLName] = &graphql.InputObjectFieldConfig{
 				Type:         buildTermLevelQueryArgumentTypes(index, graphQLName, scalarType, booleanQueryType),
 				DefaultValue: nil,
-				Description:  "",
 			}
 		}
 		st := graphql.NewInputObject(graphql.InputObjectConfig{
-			Name:        index + "_boolean_args+" + string(booleanQueryType),
-			Fields:      subFields,
-			Description: "",
+			Name:   index + "_boolean_args" + string(booleanQueryType),
+			Fields: subFields,
 		})
 		fields[string(booleanQueryType)] = &graphql.InputObjectFieldConfig{
 			Type:         st,
 			DefaultValue: nil,
-			Description:  "",
 		}
 	}
 
 	t := graphql.NewInputObject(graphql.InputObjectConfig{
-		Name:        index + "_boolean_args",
-		Fields:      fields,
-		Description: "",
+		Name:   index + "_boolean_args",
+		Fields: fields,
 	})
 	return &graphql.ArgumentConfig{
-		Type:        t,
-		Description: "",
+		Type: t,
 	}
 
 }
@@ -90,31 +82,24 @@ func buildTermLevelQueryArgumentTypes(index, field string, scalarType *graphql.S
 	fields["range"] = &graphql.InputObjectFieldConfig{
 		Type:         buildRangeQueryArgumentType(index, field, scalarType, queryType),
 		DefaultValue: nil,
-		Description:  "",
 	}
 
 	return graphql.NewInputObject(graphql.InputObjectConfig{
-		Name:        "term_level_" + index + "_" + field + string(queryType),
-		Fields:      fields,
-		Description: "",
+		Name:   "term_level_" + index + "_" + field + string(queryType),
+		Fields: fields,
 	})
 }
 
 func buildRangeQueryArgumentType(index, field string, scalarType *graphql.Scalar, queryType BooleanQueryType) *graphql.InputObject {
 	fields := make(graphql.InputObjectConfigFieldMap)
-
 	t := &graphql.InputObjectFieldConfig{
-		Type:         scalarType,
-		DefaultValue: nil,
-		Description:  "",
+		Type: scalarType,
 	}
 	for _, rangeQueryType := range []string{"lt", "lte", "gt", "gte"} {
 		fields[rangeQueryType] = t
 	}
-
 	return graphql.NewInputObject(graphql.InputObjectConfig{
-		Name:        field + "range_args_" + index + string(queryType),
-		Fields:      fields,
-		Description: "",
+		Name:   field + "range_args_" + index + string(queryType),
+		Fields: fields,
 	})
 }
