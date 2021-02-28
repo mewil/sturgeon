@@ -1,8 +1,10 @@
 FROM golang:1.16-alpine AS build
+ENV CGO_ENABLED=0
 COPY . /go/src/github.com/mewil/sturgeon
 WORKDIR /go/src/github.com/mewil/sturgeon
 RUN go mod download
 RUN go install .
+RUN ls /go/bin
 RUN adduser -D -g '' user
 
 FROM scratch AS sturgeon
