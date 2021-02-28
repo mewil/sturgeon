@@ -1,16 +1,15 @@
-FROM gradle:6.7.0-jdk15 AS build
+FROM golang:1.16-alpine AS build
+COPY . /go/src/github.com/mewil/sturgeon
+WORKDIR /go/src/github.com/mewil/sturgeon
+RUN go mod download
+RUN go install .
+RUN adduser -D -g '' user
 
-COPY --chown=gradle:gradle . /home/gradle/src
-WORKDIR /home/gradle/src
-
-RUN gradle build --no-daemon
-
-FROM openjdk:15.0.1
-LABEL author="Michael Wilson"
-LABEL repository="http://github.com/mewil/sturgeon"
-
-RUN mkdir /app
-COPY --from=build /home/gradle/src/build/libs/*.jar /app/sturgeon.jar
-
-ENTRYPOINT [ "java", "-jar", "/app/sturgeon.jar" ]
+FROM scratch AS sturgeon
+LABEL Author="Michael Wilson"
+COPY --from=build /etc/passwd /etc/passwd
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build /go/bin/sturgeon /bin/sturgeon
+USER user
+ENTRYPOINT ["/bin/sturgeon"]
 EXPOSE 8080
