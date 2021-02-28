@@ -67,7 +67,7 @@ func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *e
 		},
 		Resolve: NewDocumentResolver(index, es),
 	}
-	if Config.EnableAggregationSchema {
+	if Config.EnableAggregations {
 		start = time.Now()
 		documentAggregationType := buildDocumentAggregationTypeFromMapping(index, properties, es)
 		log.Print("built document aggregation type for ", index, " in ", time.Since(start))
@@ -174,7 +174,7 @@ func getFieldType(scalarType string, aggregationType *AggregationType) graphql.O
 func getFields(mapping map[string]interface{}, aggregationType *AggregationType) graphql.Fields {
 	fields := make(graphql.Fields)
 	for name, field := range mapping {
-		if strings.HasPrefix(name, Config.FieldIgnorePrefix) {
+		if Config.FieldIgnorePrefix != "" && strings.HasPrefix(name, Config.FieldIgnorePrefix) {
 			continue
 		}
 		addName(name)
