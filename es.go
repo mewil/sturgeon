@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -88,12 +89,7 @@ func query(es *elasticsearch.Client, ctx context.Context, index string, size int
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		return nil, parseQueryError(res)
-	}
-	data := map[string]interface{}{}
-	err = json.NewDecoder(res.Body).Decode(&data)
+	data, err := parseQueryResponse(res)
 	if err != nil {
 		return nil, err
 	}
@@ -108,13 +104,7 @@ func queryById(es *elasticsearch.Client, ctx context.Context, index, id string, 
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		return nil, parseQueryError(res)
-	}
-	data := map[string]interface{}{}
-	err = json.NewDecoder(res.Body).Decode(&data)
-	return data, err
+	return parseQueryResponse(res)
 }
 
 func queryAggregation(es *elasticsearch.Client, ctx context.Context, index string, selectedFields []string, args map[string]interface{}, aggregationType AggregationType) (map[string]interface{}, error) {
@@ -150,12 +140,7 @@ func queryAggregation(es *elasticsearch.Client, ctx context.Context, index strin
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-	if res.IsError() {
-		return nil, parseQueryError(res)
-	}
-	data := map[string]interface{}{}
-	err = json.NewDecoder(res.Body).Decode(&data)
+	data, err := parseQueryResponse(res)
 	if err != nil {
 		return nil, err
 	}
@@ -173,6 +158,25 @@ func queryAggregation(es *elasticsearch.Client, ctx context.Context, index strin
 		}
 	}
 	return results, nil
+}
+
+func parseQueryResponse(res *esapi.Response) (map[string]interface{}, error) {
+	defer res.Body.Close()
+	if res.IsError() {
+		return nil, parseQueryError(res)
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	if Config.EnableQueryResultLogging {
+		log.Print(string(body))
+	}
+	data := map[string]interface{}{}
+	if err = json.Unmarshal(body, &data); err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 func parseQueryError(res *esapi.Response) error {

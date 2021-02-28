@@ -40,7 +40,7 @@ func buildBooleanQueryTypes(index string, mapping map[string]interface{}) *graph
 		subFields := make(graphql.InputObjectConfigFieldMap)
 		for name, field := range mapping {
 			// TODO: consolidate shared logic with getFields method
-			if strings.HasPrefix(name, Config.FieldIgnorePrefix) {
+			if Config.FieldIgnorePrefix != "" && strings.HasPrefix(name, Config.FieldIgnorePrefix) {
 				continue
 			}
 			addName(name)

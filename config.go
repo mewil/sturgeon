@@ -8,11 +8,12 @@ import (
 
 type appConfig struct {
 	ElasticsearchHosts               []string `split_words:"true"`
-	ElasticsearchIndexIncludePattern string   `split_words:"true" default:"*"`
+	ElasticsearchIndexIncludePattern string   `split_words:"true" default:"_all"`
 	FieldIgnorePrefix                string   `split_words:"true"`
-	EnableAggregationSchema          bool     `split_words:"true" default:"true"`
+	EnableAggregations               bool     `split_words:"true" default:"true"`
 	EnableGraphiql                   bool     `split_words:"true"`
-	EnableQueryLogging               bool     `split_words:"true"`
+	EnableQueryLogging               bool     `split_words:"true" default:"true"`
+	EnableQueryResultLogging         bool     `split_words:"true" default:"true"`
 }
 
 var Config appConfig
