@@ -18,9 +18,9 @@ _The above image shows example queries for the three GraphQL schemas generated f
 With Elasticsearch running on your local machine on port `9200`, run the following `docker run` command to start Sturgeon on
 port `8080`. 
 ```shell script
-docker run -e STURGEON_ELASTICSEARCH_HOSTS=host.docker.internal:9200 -p 8080:8080 --rm mewil/sturgeon:latest 
+docker run -e STURGEON_ELASTICSEARCH_HOSTS=http://host.docker.internal:9200 -e STURGEON_ENABLE_GRAPHIQL=true -p 8080:8080 --rm mewil/sturgeon:latest 
 ```
-After the server is running, use a tool such as [GraphiQL](https://github.com/graphql/graphiql) to explore the generated schema.
+After the GraphQL schema is generated and the server is running, the [GraphiQL](https://github.com/graphql/graphiql) UI will be accessible at http://localhost:8080/graphql.
 
 ## Options
 
@@ -28,9 +28,9 @@ Sturgeon can be configured using the following environment variables:
 
 | Variable                                       | Description                                                                                                                                                                                                                                    | Default |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `STURGEON_ELASTICSEARCH_HOSTS`                 | A comma-separated list of Elasticsearch hosts                                                                                                                                                                                                  | `[] `   |
+| `STURGEON_ELASTICSEARCH_HOSTS`                 | A comma-separated list of Elasticsearch hosts including URL scheme (e.g. `http://host.docker.internal:9200`)                                                                                                                                   | `[] `   |
 | `STURGEON_ELASTICSEARCH_INDEX_INCLUDE_PATTERN` | A pattern that determines which Elasticsearch indices are used to create GraphQL schemas, see the [Elasticsearch Get Mapping API](https://www.elastic.co/guide/en/elasticsearch/reference/master/indices-get-mapping.html) for possible values | `"*"`   |
-| `STURGEON_FIELD_IGNORE_PREFIX`                 | A regular expression that determines which Elasticsearch indices are used to create GraphQL schemas                                                                                                                                            | `".*"`  |
+| `STURGEON_FIELD_IGNORE_PREFIX`                 | A regular expression that can be used to ignore document field prefixes when generating a GraphQL schema                                                                                                                                       | `".*"`  |
 | `STURGEON_ENABLE_AGGREGATIONS`                 | Used to enable or disable aggregation schemas                                                                                                                                                                                                  | `true`  |
 | `STURGEON_ENABLE_GRAPHIQL`                     | Used to enable or disable a [GraphiQL](https://github.com/graphql/graphiql) web interface                                                                                                                                                      | `false` |
 | `STURGEON_ENABLE_QUERY_LOGGING`                | Used to enable or disable logging of queries sent to Elasticsearch                                                                                                                                                                             | `true`  |

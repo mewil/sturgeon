@@ -35,7 +35,7 @@ func normalizeName(name string) string {
 	for _, s := range []string{"[", "(", ")", "?", "@", "#", "]"} {
 		name = strings.ReplaceAll(name, s, "")
 	}
-	for _, s := range []string{" "} {
+	for _, s := range []string{" ", "/"} {
 		name = strings.ReplaceAll(name, s, "_")
 	}
 	for _, s := range []string{"+"} {

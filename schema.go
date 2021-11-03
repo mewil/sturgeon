@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/graphql-go/graphql"
 	"log"
@@ -69,7 +70,7 @@ func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *e
 	}
 	if Config.EnableAggregations {
 		start = time.Now()
-		documentAggregationType := buildDocumentAggregationTypeFromMapping(index, properties, es)
+		documentAggregationType := buildDocumentAggregationTypeFromMapping(index, properties)
 		log.Print("built document aggregation type for ", index, " in ", time.Since(start))
 		schemas <- &graphql.Field{
 			Name: index + "_aggregations",
@@ -117,7 +118,7 @@ var aggregationTypes = []AggregationType{
 	AggregationTypePercentiles,
 }
 
-func buildDocumentAggregationTypeFromMapping(index string, mapping map[string]interface{}, es *elasticsearch.Client) *graphql.Object {
+func buildDocumentAggregationTypeFromMapping(index string, mapping map[string]interface{}) *graphql.Object {
 	fields := make(graphql.Fields)
 	for _, aggregationType := range aggregationTypes {
 		subFields := getFields(mapping, &aggregationType)
@@ -157,15 +158,15 @@ func buildKeyValueFloatType() graphql.Type {
 
 var keyValueType = buildKeyValueFloatType()
 
-func getFieldType(scalarType string, aggregationType *AggregationType) graphql.Output {
+func getFieldType(scalarType string, aggregationType *AggregationType) (graphql.Output, error) {
 	if aggregationType == nil {
 		return mapToGraphQLScalarType(scalarType)
 	}
 	switch *aggregationType {
 	case AggregationTypeCardinality:
-		return graphql.Int
+		return graphql.Int, nil
 	case AggregationTypePercentiles:
-		return graphql.NewList(keyValueType)
+		return graphql.NewList(keyValueType), nil
 	default:
 		return mapToGraphQLScalarType(scalarType)
 	}
@@ -185,29 +186,32 @@ func getFields(mapping map[string]interface{}, aggregationType *AggregationType)
 		if !ok {
 			continue
 		}
-		fields[graphQLName] = &graphql.Field{
-			Name:    graphQLName,
-			Type:    getFieldType(fieldTypeString, aggregationType),
-			Args:    nil,
-			Resolve: nil,
+		fieldType, err := getFieldType(fieldTypeString, aggregationType)
+		if err == nil {
+			fields[graphQLName] = &graphql.Field{
+				Name:    graphQLName,
+				Type:    fieldType,
+				Args:    nil,
+				Resolve: nil,
+			}
 		}
 	}
 	return fields
 }
 
-func mapToGraphQLScalarType(scalarType string) *graphql.Scalar {
+func mapToGraphQLScalarType(scalarType string) (*graphql.Scalar, error) {
 	switch scalarType {
 	case "float":
-		return graphql.Float
+		return graphql.Float, nil
 	case "long":
-		return graphql.Int
+		return graphql.Int, nil
 	case "string":
-		return graphql.String
+		return graphql.String, nil
 	case "date":
-		return graphql.DateTime
+		return graphql.DateTime, nil
 	case "boolean":
-		return graphql.Boolean
+		return graphql.Boolean, nil
 	default:
-		return nil
+		return nil, fmt.Errorf("no scalar type %s", scalarType)
 	}
 }

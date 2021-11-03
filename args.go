@@ -50,10 +50,12 @@ func buildBooleanQueryTypes(index string, mapping map[string]interface{}) *graph
 			if !ok {
 				continue
 			}
-			scalarType := mapToGraphQLScalarType(fieldType)
-			subFields[graphQLName] = &graphql.InputObjectFieldConfig{
-				Type:         buildTermLevelQueryArgumentTypes(index, graphQLName, scalarType, booleanQueryType),
-				DefaultValue: nil,
+			scalarType, err := mapToGraphQLScalarType(fieldType)
+			if err == nil {
+				subFields[graphQLName] = &graphql.InputObjectFieldConfig{
+					Type:         buildTermLevelQueryArgumentTypes(index, graphQLName, scalarType, booleanQueryType),
+					DefaultValue: nil,
+				}
 			}
 		}
 		st := graphql.NewInputObject(graphql.InputObjectConfig{
