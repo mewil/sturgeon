@@ -11,11 +11,11 @@ It currently provides schemas for querying documents by ID, a list of documents,
 Users can specify search parameters using the `boolean_query` argument, which supports boolean [range queries](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-range-query.html) for float, integer and timestamp values.
 More complex arguments and search options will be available soon.
 
-_The above image shows example queries for the three GraphQL schemas generated for a single Elasticsearch index._ 
+_The above image shows example queries for the three GraphQL schemas generated from a single Elasticsearch index._ 
 
 ## Docker Quickstart
 
-With Elasticsearch running on your local machine on port `9200`, run the following `docker run` command to start Sturgeon on
+With Elasticsearch running on your local machine on port `9200`, use the following `docker run` command to start Sturgeon on
 port `8080`. 
 ```shell script
 docker run -e STURGEON_ELASTICSEARCH_HOSTS=http://host.docker.internal:9200 -e STURGEON_ENABLE_GRAPHIQL=true -p 8080:8080 --rm mewil/sturgeon:latest 
