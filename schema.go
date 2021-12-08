@@ -39,9 +39,13 @@ func buildSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.
 }
 
 func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *elasticsearch.Client, schemas chan<- *graphql.Field, wg *sync.WaitGroup) {
+	properties, ok := mapping["properties"].(map[string]interface{})
+	if !ok {
+		log.Print("mapping for index", index, "did not contain properties, ignoring")
+		return
+	}
 	addName(index)
 	index = getGraphQLName(index)
-	properties := mapping["properties"].(map[string]interface{})
 	start := time.Now()
 	documentType := buildDocumentTypeFromMapping(index, properties)
 	log.Print("built document type for ", index, " in ", time.Since(start))
