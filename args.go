@@ -45,7 +45,10 @@ func buildBooleanQueryTypes(index string, mapping map[string]interface{}) *graph
 			}
 			addName(name)
 			graphQLName := getGraphQLName(name)
-			fieldInfo := field.(map[string]interface{})
+			fieldInfo, ok := field.(map[string]interface{})
+			if !ok {
+				continue
+			}
 			fieldType, ok := fieldInfo["type"].(string)
 			if !ok {
 				continue

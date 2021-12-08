@@ -23,7 +23,11 @@ func NewElasticsearchClient() (*elasticsearch.Client, error) {
 			DialContext:           (&net.Dialer{Timeout: time.Second}).DialContext,
 		},
 	}
-	return elasticsearch.NewClient(cfg)
+	es, err := elasticsearch.NewClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to Elasticsearch: %w", err)
+	}
+	return es, nil
 }
 
 func getMappings(es *elasticsearch.Client) (map[string]interface{}, error) {
@@ -33,14 +37,16 @@ func getMappings(es *elasticsearch.Client) (map[string]interface{}, error) {
 		es.Indices.GetMapping.WithContext(ctx),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get index mappings: %w", err)
 	}
 	if res.IsError() {
 		return nil, fmt.Errorf(res.String())
 	}
 	data := map[string]interface{}{}
-	err = json.NewDecoder(res.Body).Decode(&data)
-	return data, err
+	if err = json.NewDecoder(res.Body).Decode(&data); err != nil {
+		return nil, fmt.Errorf("failed to decode mappings from response: %w", err)
+	}
+	return data, nil
 }
 
 func buildQueryFromArgs(args map[string]interface{}) map[string]interface{} {
@@ -54,7 +60,10 @@ func buildQueryFromArgs(args map[string]interface{}) map[string]interface{} {
 		for clause := range boolQuery.(map[string]interface{}) {
 			for field := range boolQuery.(map[string]interface{})[clause].(map[string]interface{}) {
 				for termLevel := range boolQuery.(map[string]interface{})[clause].(map[string]interface{})[field].(map[string]interface{}) {
-					sq := q["query"].(map[string]interface{})
+					sq, ok := q["query"].(map[string]interface{})
+					if !ok {
+						continue
+					}
 					sq["bool"] = map[string]interface{}{
 						clause: map[string]interface{}{
 							termLevel: map[string]interface{}{
@@ -69,7 +78,7 @@ func buildQueryFromArgs(args map[string]interface{}) map[string]interface{} {
 	return q
 }
 
-func query(es *elasticsearch.Client, ctx context.Context, index string, size int, selectedFields []string, args map[string]interface{}) ([]interface{}, error) {
+func query(ctx context.Context, es *elasticsearch.Client, index string, size int, selectedFields []string, args map[string]interface{}) ([]interface{}, error) {
 	q := buildQueryFromArgs(args)
 	buf := bytes.Buffer{}
 	if err := json.NewEncoder(&buf).Encode(q); err != nil {
@@ -96,7 +105,7 @@ func query(es *elasticsearch.Client, ctx context.Context, index string, size int
 	return data["hits"].(map[string]interface{})["hits"].([]interface{}), nil
 }
 
-func queryById(es *elasticsearch.Client, ctx context.Context, index, id string, selectedFields []string) (map[string]interface{}, error) {
+func queryByID(ctx context.Context, es *elasticsearch.Client, index, id string, selectedFields []string) (map[string]interface{}, error) {
 	res, err := es.Get(index, id,
 		es.Get.WithSource(selectedFields...),
 		es.Get.WithContext(ctx),
@@ -107,7 +116,7 @@ func queryById(es *elasticsearch.Client, ctx context.Context, index, id string, 
 	return parseQueryResponse(res)
 }
 
-func queryAggregation(es *elasticsearch.Client, ctx context.Context, index string, selectedFields []string, args map[string]interface{}, aggregationType AggregationType) (map[string]interface{}, error) {
+func queryAggregation(ctx context.Context, es *elasticsearch.Client, index string, selectedFields []string, args map[string]interface{}, aggregationType AggregationType) (map[string]interface{}, error) {
 	// TODO: refactor aggregation query parsing and add validation
 	q := buildQueryFromArgs(args)
 	q["aggs"] = map[string]interface{}{}
@@ -147,7 +156,10 @@ func queryAggregation(es *elasticsearch.Client, ctx context.Context, index strin
 	// TODO: refactor aggregation parsing and add error handling
 	results := make(map[string]interface{})
 	for _, field := range selectedFields {
-		v := data["aggregations"].(map[string]interface{})[fmt.Sprintf("%v_%s", aggregationType, field)].(map[string]interface{})
+		v, ok := data["aggregations"].(map[string]interface{})[fmt.Sprintf("%v_%s", aggregationType, field)].(map[string]interface{})
+		if !ok {
+			continue
+		}
 		if value, ok := v["value"]; ok {
 			results[field] = value
 			continue
@@ -182,9 +194,8 @@ func parseQueryResponse(res *esapi.Response) (map[string]interface{}, error) {
 func parseQueryError(res *esapi.Response) error {
 	data := map[string]interface{}{}
 	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
-		return fmt.Errorf("failed to parse response body: %v", err)
-	} else {
-		errData := data["error"].(map[string]interface{})
-		return fmt.Errorf("query failed: %s %s: %s", res.Status(), errData["type"], errData["reason"])
+		return fmt.Errorf("failed to parse response body: %w", err)
 	}
+	errData := data["error"].(map[string]interface{})
+	return fmt.Errorf("query failed: %s %s: %s", res.Status(), errData["type"], errData["reason"])
 }

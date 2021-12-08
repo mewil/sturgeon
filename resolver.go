@@ -11,28 +11,28 @@ import (
 
 func NewDocumentListResolver(index string, es *elasticsearch.Client) graphql.FieldResolveFn {
 	return func(p graphql.ResolveParams) (interface{}, error) {
-		selectedFields, includeIdField := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
+		selectedFields, includeIDField := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
 		size, _ := getSizeArgument(p.Args)
-		res, err := query(es, p.Context, index, size, selectedFields, p.Args)
+		res, err := query(p.Context, es, index, size, selectedFields, p.Args)
 		if err != nil {
 			log.Print(err)
 			return nil, err
 		}
-		docs := convertSourceDocumentsToQueryResult(res, includeIdField)
+		docs := convertSourceDocumentsToQueryResult(res, includeIDField)
 		return docs, nil
 	}
 }
 
 func NewDocumentResolver(index string, es *elasticsearch.Client) graphql.FieldResolveFn {
 	return func(p graphql.ResolveParams) (interface{}, error) {
-		selectedFields, includeIdField := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
+		selectedFields, includeIDField := getSelectedFieldsFromQuery(p.Info.Operation.GetSelectionSet().Selections[0].(*ast.Field).GetSelectionSet())
 		// TODO: move parse id argument to helper
-		res, err := queryById(es, p.Context, index, p.Args["id"].(string), selectedFields)
+		res, err := queryByID(p.Context, es, index, p.Args["id"].(string), selectedFields)
 		if err != nil {
 			log.Print(err)
 			return nil, err
 		}
-		doc := convertSourceDocumentsToQueryResult([]interface{}{res}, includeIdField)[0]
+		doc := convertSourceDocumentsToQueryResult([]interface{}{res}, includeIDField)[0]
 		return doc, nil
 	}
 }
@@ -45,7 +45,7 @@ func NewAggregationResolver(index string, es *elasticsearch.Client) graphql.Fiel
 				for _, selection := range topLevelSelection.(*ast.Field).GetSelectionSet().Selections {
 					aggregationName := selection.(*ast.Field).Name.Value
 					selectedFields, _ := getSelectedFieldsFromQuery(selection.(*ast.Field).GetSelectionSet())
-					res, err := queryAggregation(es, p.Context, index, selectedFields, p.Args, AggregationType(aggregationName))
+					res, err := queryAggregation(p.Context, es, index, selectedFields, p.Args, AggregationType(aggregationName))
 					if err != nil {
 						log.Print(err)
 						return nil, err
@@ -61,7 +61,7 @@ func NewAggregationResolver(index string, es *elasticsearch.Client) graphql.Fiel
 
 func getSelectedFieldsFromQuery(selectionSet *ast.SelectionSet) ([]string, bool) {
 	selectedFields := make([]string, 0, len(selectionSet.Selections)+1)
-	includesIdField := false
+	includesIDField := false
 	for _, selection := range selectionSet.Selections {
 		field, ok := selection.(*ast.Field)
 		if !ok {
@@ -69,20 +69,20 @@ func getSelectedFieldsFromQuery(selectionSet *ast.SelectionSet) ([]string, bool)
 		}
 		name := field.Name.Value
 		if name == "id" {
-			includesIdField = true
+			includesIDField = true
 		}
 		selectedFields = append(selectedFields, getOriginalName(name))
 	}
-	return selectedFields, includesIdField
+	return selectedFields, includesIDField
 }
 
-func convertSourceDocumentsToQueryResult(documents []interface{}, includeIdField bool) []interface{} {
+func convertSourceDocumentsToQueryResult(documents []interface{}, includeIDField bool) []interface{} {
 	results := make([]interface{}, len(documents))
 	for i, document := range documents {
 		doc := document.(map[string]interface{})
 		source := doc["_source"].(map[string]interface{})
 		fields := convertSourceToQueryResult(source)
-		if includeIdField {
+		if includeIDField {
 			fields["id"] = doc["_id"]
 		}
 		results[i] = fields

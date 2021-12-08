@@ -52,14 +52,14 @@ func TestBuildSchemaFromMappings(t *testing.T) {
 	wg.Add(1)
 	buildSchemasFromMapping("index", inputMapping, nil, schemas, &wg)
 	documentListSchema := <-schemas
-	documentByIdSchema := <-schemas
+	documentByIDSchema := <-schemas
 	documentAggregation := <-schemas
 
 	require.Equal(t, "index", documentListSchema.Name)
 	require.Equal(t, "[index_document]", documentListSchema.Type.String())
 
-	require.Equal(t, "index_by_id", documentByIdSchema.Name)
-	require.Equal(t, "index_document", documentByIdSchema.Type.String())
+	require.Equal(t, "index_by_id", documentByIDSchema.Name)
+	require.Equal(t, "index_document", documentByIDSchema.Type.String())
 
 	require.Equal(t, "index_aggregations", documentAggregation.Name)
 	require.Equal(t, "index_aggregation_document", documentAggregation.Type.String())

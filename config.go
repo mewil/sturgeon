@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/kelseyhightower/envconfig"
 	"log"
 )
@@ -22,5 +21,5 @@ func init() {
 	if err := envconfig.Process("sturgeon", &Config); err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(Config)
+	log.Printf("%+v", Config)
 }
