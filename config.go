@@ -10,7 +10,7 @@ type appConfig struct {
 	ElasticsearchIndexIncludePattern string   `split_words:"true" default:"_all"`
 	FieldIgnorePrefix                string   `split_words:"true"`
 	EnableAggregations               bool     `split_words:"true" default:"true"`
-	EnableGraphiql                   bool     `split_words:"true"`
+	EnableGraphiql                   bool     `split_words:"true" default:"true"`
 	EnableQueryLogging               bool     `split_words:"true" default:"true"`
 	EnableQueryResultLogging         bool     `split_words:"true" default:"true"`
 }
