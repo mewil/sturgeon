@@ -14,6 +14,8 @@ func TestNameConversions(t *testing.T) {
 		{"@timestamp", "timestamp"},
 		{"+foo", "plus_foo"},
 		{"-foo", "minus_foo"},
+		{"test+foo", "test_foo"},
+		{"test-foo", "test_foo"},
 		{"#count", "count"},
 		{"1foo", "_1foo"},
 	}

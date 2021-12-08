@@ -32,8 +32,9 @@ func getOriginalName(graphQLName string) string {
 }
 
 type nameNormalization struct {
-	old []string
-	new string
+	old        []string
+	new        string
+	prefixOnly bool
 }
 
 var nameNormalizations = []nameNormalization{
@@ -42,23 +43,31 @@ var nameNormalizations = []nameNormalization{
 		new: "",
 	},
 	{
-		old: []string{" ", "/"},
+		old:        []string{"+"},
+		new:        "plus_",
+		prefixOnly: true,
+	},
+	{
+		old:        []string{"-"},
+		new:        "minus_",
+		prefixOnly: true,
+	},
+	{
+		old: []string{" ", "/", "+", "-"},
 		new: "_",
-	},
-	{
-		old: []string{"+"},
-		new: "plus_",
-	},
-	{
-		old: []string{"-"},
-		new: "minus_",
 	},
 }
 
 func normalizeName(name string) string {
 	for _, normalization := range nameNormalizations {
 		for _, s := range normalization.old {
-			name = strings.ReplaceAll(name, s, normalization.new)
+			if normalization.prefixOnly {
+				if strings.HasPrefix(name, s) {
+					name = strings.Replace(name, s, normalization.new, 1)
+				}
+			} else {
+				name = strings.ReplaceAll(name, s, normalization.new)
+			}
 		}
 	}
 	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
