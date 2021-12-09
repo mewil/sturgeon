@@ -6,43 +6,38 @@ import (
 	"github.com/graphql-go/graphql"
 	"log"
 	"strings"
-	"sync"
 	"time"
 )
 
-func buildSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.Client) (graphql.Schema, error) {
-	wg := sync.WaitGroup{}
-	schemas := make(chan *graphql.Field)
-	for index, mapping := range mappings {
-		wg.Add(1)
-		go buildSchemasFromMapping(
-			index,
-			mapping.(map[string]interface{})["mappings"].(map[string]interface{}),
-			es,
-			schemas,
-			&wg,
-		)
-	}
-	fields := graphql.Fields{}
-	go func() {
-		wg.Wait()
-		close(schemas)
-	}()
-	for schema := range schemas {
-		schema := schema // pin https://github.com/golang/go/wiki/CommonMistakes#using-reference-to-loop-iterator-variable
-		fields[schema.Name] = schema
-	}
-
+func buildRootSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.Client) (graphql.Schema, error) {
+	fields := buildSchemaFromMappings(mappings, es)
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
 	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
 	return graphql.NewSchema(schemaConfig)
 }
 
-func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *elasticsearch.Client, schemas chan<- *graphql.Field, wg *sync.WaitGroup) {
+func buildSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.Client) graphql.Fields {
+	fields := graphql.Fields{}
+	for index, mapping := range mappings {
+		schemas := buildSchemasFromMapping(
+			index,
+			mapping.(map[string]interface{})["mappings"].(map[string]interface{}),
+			es,
+		)
+		for _, schema := range schemas {
+			schema := schema // pin https://github.com/golang/go/wiki/CommonMistakes#using-reference-to-loop-iterator-variable
+			fields[schema.Name] = &schema
+		}
+	}
+	return fields
+}
+
+func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *elasticsearch.Client) []graphql.Field {
+	schemas := make([]graphql.Field, 0, 3)
 	properties, ok := mapping["properties"].(map[string]interface{})
 	if !ok {
-		log.Print("mapping for index", index, "did not contain properties, ignoring")
-		return
+		log.Print("mapping for index ", index, " did not contain properties, ignoring")
+		return schemas
 	}
 	addName(index)
 	index = getGraphQLName(index)
@@ -53,7 +48,7 @@ func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *e
 	booleanArgs := buildBooleanQueryTypes(index, properties)
 	log.Print("built boolean argument type for ", index, " in ", time.Since(start))
 
-	schemas <- &graphql.Field{
+	schemas = append(schemas, graphql.Field{
 		Name: index,
 		Type: graphql.NewList(documentType),
 		Args: graphql.FieldConfigArgument{
@@ -63,8 +58,8 @@ func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *e
 			"boolean_query": booleanArgs,
 		},
 		Resolve: NewDocumentListResolver(index, es),
-	}
-	schemas <- &graphql.Field{
+	})
+	schemas = append(schemas, graphql.Field{
 		Name: index + "_by_id",
 		Type: documentType,
 		Args: graphql.FieldConfigArgument{
@@ -73,21 +68,21 @@ func buildSchemasFromMapping(index string, mapping map[string]interface{}, es *e
 			},
 		},
 		Resolve: NewDocumentResolver(index, es),
-	}
+	})
 	if Config.EnableAggregations {
 		start = time.Now()
 		documentAggregationType := buildDocumentAggregationTypeFromMapping(index, properties)
 		log.Print("built document aggregation type for ", index, " in ", time.Since(start))
-		schemas <- &graphql.Field{
+		schemas = append(schemas, graphql.Field{
 			Name: index + "_aggregations",
 			Type: documentAggregationType,
 			Args: graphql.FieldConfigArgument{
 				"boolean_query": booleanArgs,
 			},
 			Resolve: NewAggregationResolver(index, es),
-		}
+		})
 	}
-	wg.Done()
+	return schemas
 }
 
 func buildDocumentTypeFromMapping(index string, mapping map[string]interface{}) *graphql.Object {

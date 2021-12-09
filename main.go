@@ -17,7 +17,7 @@ func main() {
 		log.Fatal(err)
 	}
 	start := time.Now()
-	schema, err := buildSchemaFromMappings(mappings, es)
+	schema, err := buildRootSchemaFromMappings(mappings, es)
 	if err != nil {
 		log.Fatal(err)
 	}
