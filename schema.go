@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/graphql-go/graphql"
@@ -11,6 +12,9 @@ import (
 
 func buildRootSchemaFromMappings(mappings map[string]interface{}, es *elasticsearch.Client) (graphql.Schema, error) {
 	fields := buildSchemaFromMappings(mappings, es)
+	if len(fields) == 0 {
+		return graphql.Schema{}, errors.New("no valid mappings provided, no schemas were built")
+	}
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
 	schemaConfig := graphql.SchemaConfig{Query: graphql.NewObject(rootQuery)}
 	return graphql.NewSchema(schemaConfig)
