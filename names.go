@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 	"sync"
+	"unicode"
 )
 
 var (
@@ -31,43 +32,20 @@ func getOriginalName(graphQLName string) string {
 	return graphQLNameToOriginal[graphQLName]
 }
 
-type nameNormalization struct {
-	old        []string
-	new        string
-	prefixOnly bool
-}
-
-var nameNormalizations = []nameNormalization{
-	{
-		old: []string{"[", "(", ")", "?", "@", "#", "]"},
-		new: "",
-	},
-	{
-		old:        []string{"+"},
-		new:        "plus_",
-		prefixOnly: true,
-	},
-	{
-		old:        []string{"-"},
-		new:        "minus_",
-		prefixOnly: true,
-	},
-	{
-		old: []string{" ", "/", "+", "-"},
-		new: "_",
-	},
+func replaceAtIndex(s, r string, i int) string {
+	return s[:i] + r + s[i+1:]
 }
 
 func normalizeName(name string) string {
-	for _, normalization := range nameNormalizations {
-		for _, s := range normalization.old {
-			if normalization.prefixOnly {
-				if strings.HasPrefix(name, s) {
-					name = strings.Replace(name, s, normalization.new, 1)
-				}
-			} else {
-				name = strings.ReplaceAll(name, s, normalization.new)
-			}
+	if strings.HasPrefix(name, "+") {
+		name = replaceAtIndex(name, "plus_", 0)
+	}
+	if strings.HasPrefix(name, "-") {
+		name = replaceAtIndex(name, "minus_", 0)
+	}
+	for i := range name {
+		if !(unicode.IsLetter(rune(name[i])) || unicode.IsNumber(rune(name[i]))) {
+			name = replaceAtIndex(name, "_", i)
 		}
 	}
 	if len(name) > 0 && name[0] >= '0' && name[0] <= '9' {
