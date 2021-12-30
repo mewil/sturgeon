@@ -61,6 +61,9 @@ func buildBooleanQueryTypes(index string, mapping map[string]interface{}) *graph
 				}
 			}
 		}
+		if len(subFields) == 0 {
+			continue
+		}
 		st := graphql.NewInputObject(graphql.InputObjectConfig{
 			Name:   index + "_boolean_args" + string(booleanQueryType),
 			Fields: subFields,
