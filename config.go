@@ -11,6 +11,8 @@ type appConfig struct {
 	FieldIgnorePrefix                string   `split_words:"true"`
 	EnableAggregations               bool     `split_words:"true" default:"true"`
 	EnableGraphiql                   bool     `split_words:"true" default:"true"`
+	Port                             int      `split_words:"true" default:"8080"`
+	Path                             string   `split_words:"true" default:"/"`
 	EnableQueryLogging               bool     `split_words:"true" default:"true"`
 	EnableQueryResultLogging         bool     `split_words:"true" default:"true"`
 }

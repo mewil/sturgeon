@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/graphql-go/handler"
 	"log"
 	"net/http"
@@ -27,6 +28,6 @@ func main() {
 		Pretty:   true,
 		GraphiQL: Config.EnableGraphiql,
 	})
-	http.Handle("/graphql", h)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	http.Handle(Config.Path, h)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", Config.Port), nil))
 }
